@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1a1a2e;
+      font-family: 'Segoe UI', sans-serif;
+      color: #eee;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #e94560;
+    }
+
+    #status {
+      font-size: 1.2rem;
+      margin-bottom: 1.5rem;
+      min-height: 1.5em;
+      color: #a8dadc;
+      font-weight: 600;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 110px);
+      grid-template-rows: repeat(3, 110px);
+      gap: 8px;
+    }
+
+    .cell {
+      width: 110px;
+      height: 110px;
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken) {
+      background: #0f3460;
+      transform: scale(1.05);
+    }
+
+    .cell.x { color: #e94560; }
+    .cell.o { color: #a8dadc; }
+
+    .cell.win {
+      background: #0f3460;
+      border-color: #e94560;
+      animation: pulse 0.4s ease;
+    }
+
+    @keyframes pulse {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.12); }
+      100% { transform: scale(1); }
+    }
+
+    #controls {
+      margin-top: 2rem;
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      padding: 0.6rem 1.6rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:hover { opacity: 0.85; transform: scale(1.04); }
+
+    #restart {
+      background: #e94560;
+      color: #fff;
+    }
+
+    #toggle-mode {
+      background: #0f3460;
+      color: #a8dadc;
+      border: 2px solid #a8dadc;
+    }
+
+    #scores {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 2rem;
+      font-size: 1rem;
+      color: #aaa;
+    }
+
+    .score-box { text-align: center; }
+    .score-box span { display: block; font-size: 1.8rem; font-weight: 900; }
+    .score-box .x-score { color: #e94560; }
+    .score-box .o-score { color: #a8dadc; }
+    .score-box .tie-score { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe</h1>
+  <div id="status">Player X's turn</div>
+  <div id="board"></div>
+  <div id="controls">
+    <button id="restart">Restart</button>
+    <button id="toggle-mode">vs Computer</button>
+  </div>
+  <div id="scores">
+    <div class="score-box">X <span class="x-score" id="score-x">0</span></div>
+    <div class="score-box">Ties <span class="tie-score" id="score-tie">0</span></div>
+    <div class="score-box">O <span class="o-score" id="score-o">0</span></div>
+  </div>
+
+  <script>
+    const WINS = [
+      [0,1,2],[3,4,5],[6,7,8],
+      [0,3,6],[1,4,7],[2,5,8],
+      [0,4,8],[2,4,6]
+    ];
+
+    let board, current, gameOver, vsComputer, scores;
+
+    function init() {
+      board = Array(9).fill('');
+      current = 'X';
+      gameOver = false;
+      renderBoard();
+      setStatus(`Player ${current}'s turn`);
+    }
+
+    function initAll() {
+      vsComputer = false;
+      scores = { X: 0, O: 0, tie: 0 };
+      updateScoreDisplay();
+      init();
+    }
+
+    function renderBoard() {
+      const el = document.getElementById('board');
+      el.innerHTML = '';
+      board.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (val ? ` ${val.toLowerCase()} taken` : '');
+        cell.textContent = val;
+        cell.addEventListener('click', () => handleClick(i));
+        el.appendChild(cell);
+      });
+    }
+
+    function handleClick(i) {
+      if (gameOver || board[i]) return;
+      if (vsComputer && current === 'O') return;
+      play(i);
+    }
+
+    function play(i) {
+      board[i] = current;
+      renderBoard();
+
+      const win = checkWin();
+      if (win) {
+        highlightWin(win);
+        setStatus(`Player ${current} wins!`);
+        scores[current]++;
+        updateScoreDisplay();
+        gameOver = true;
+        return;
+      }
+      if (board.every(v => v)) {
+        setStatus("It's a tie!");
+        scores.tie++;
+        updateScoreDisplay();
+        gameOver = true;
+        return;
+      }
+
+      current = current === 'X' ? 'O' : 'X';
+      setStatus(`Player ${current}'s turn`);
+
+      if (vsComputer && current === 'O' && !gameOver) {
+        setTimeout(computerMove, 350);
+      }
+    }
+
+    function computerMove() {
+      const move = bestMove();
+      if (move !== -1) play(move);
+    }
+
+    function bestMove() {
+      // Try to win
+      for (let i = 0; i < 9; i++) {
+        if (!board[i]) {
+          board[i] = 'O';
+          if (checkWin()) { board[i] = ''; return i; }
+          board[i] = '';
+        }
+      }
+      // Block player
+      for (let i = 0; i < 9; i++) {
+        if (!board[i]) {
+          board[i] = 'X';
+          if (checkWin()) { board[i] = ''; return i; }
+          board[i] = '';
+        }
+      }
+      // Take center
+      if (!board[4]) return 4;
+      // Take a corner
+      const corners = [0,2,6,8].filter(i => !board[i]);
+      if (corners.length) return corners[Math.floor(Math.random() * corners.length)];
+      // Take any open
+      const open = board.map((v,i) => v ? -1 : i).filter(i => i !== -1);
+      return open.length ? open[Math.floor(Math.random() * open.length)] : -1;
+    }
+
+    function checkWin() {
+      return WINS.find(([a,b,c]) =>
+        board[a] && board[a] === board[b] && board[b] === board[c]
+      ) || null;
+    }
+
+    function highlightWin(combo) {
+      const cells = document.querySelectorAll('.cell');
+      combo.forEach(i => cells[i].classList.add('win'));
+    }
+
+    function setStatus(msg) {
+      document.getElementById('status').textContent = msg;
+    }
+
+    function updateScoreDisplay() {
+      document.getElementById('score-x').textContent = scores.X;
+      document.getElementById('score-o').textContent = scores.O;
+      document.getElementById('score-tie').textContent = scores.tie;
+    }
+
+    document.getElementById('restart').addEventListener('click', init);
+
+    document.getElementById('toggle-mode').addEventListener('click', () => {
+      vsComputer = !vsComputer;
+      document.getElementById('toggle-mode').textContent =
+        vsComputer ? 'vs Friend' : 'vs Computer';
+      scores = { X: 0, O: 0, tie: 0 };
+      updateScoreDisplay();
+      init();
+    });
+
+    initAll();
+  </script>
+</body>
+</html>
