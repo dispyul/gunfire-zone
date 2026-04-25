@@ -36,6 +36,12 @@ Every game follows the same pattern inside one `<script>` block:
 
 ## Git workflow
 
-- Every change gets a commit + push to `origin/master` (GitHub: `https://github.com/dispyul/gunfire-zone`)
-- Commit messages are imperative, concise, and describe *what changed and why*
-- Each game file is committed separately when possible
+**Commit and push after every meaningful unit of work** — do not batch up multiple features into one commit. The goal is that GitHub always reflects the current working state so nothing is ever lost.
+
+Rules to follow on every task:
+- Stage and commit as soon as a logical piece of work is complete (a new feature, a bug fix, a new game file, a config change)
+- Push to `origin/master` immediately after each commit — never leave commits sitting only locally
+- Commit messages are imperative and describe *what changed and why* (e.g. `Add enemy speed scaling per level`, not `changes`)
+- Each game file is committed separately when possible; avoid combining unrelated changes in one commit
+
+Remote: `https://github.com/dispyul/gunfire-zone` (`origin/master`)
